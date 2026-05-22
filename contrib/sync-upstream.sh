@@ -7,7 +7,7 @@ cat <<EOT
 $0: Prepare a pull request that syncs a branch with upstream
 
 Usage:
-  $0 <base-branch> <upstream-ref>
+  $0 [--switch] <base-branch> <upstream-ref>
 
 This script creates a sync local branch pointing to <upstream-ref>. Moreover, it
 generates a helper script for opening a pull request (PR) merging the created
@@ -18,13 +18,13 @@ The synced upstream PRs are listed in the title and the description of the PR.
 "Merge <repo>#<prnum>: ...".)
 
 Arguments:
+  --switch:        Try to switch to the created sync branch
   <base-branch>:   The branch to sync with upstream
   <upstream-ref>:  The upstream ref to merge into <base-branch>
 
 Usage examples:
-  $0 master upstream/master
+  $0 --switch master upstream/master
   $0 master abc1234
-  $0 --switch origin/master upstream/master
 
 To find candidate merge commits from <upstream-ref> (oldest first), use:
   git log --oneline --topo-order --reverse --merges \$(git merge-base <upstream-ref> <base-branch>)..<upstream-ref>
@@ -32,6 +32,11 @@ EOT
 }
 
 ### Parse arguments
+SWITCH=false
+if [ "$#" -ge 1 ] && [ "$1" = "--switch" ]; then
+    SWITCH=true
+    shift
+fi
 if [ "$#" -ne 2 ]; then
     help
     exit 1
@@ -109,3 +114,10 @@ echo "You can now:"
 echo "  1. Optionally resolve merge conflicts by merging $BASE_BRANCH into $SYNC_BRANCH."
 echo "  2. Push $SYNC_BRANCH to some GitHub remote."
 echo "  3. Run ./$FNAME to create a pull request. (Tip: Pass --dry-run first.)"
+
+if [ "${SWITCH:-false}" = true ]; then
+    echo
+    echo "Trying to switch to the sync branch..."
+    echo
+    git switch "$SYNC_BRANCH"
+fi
